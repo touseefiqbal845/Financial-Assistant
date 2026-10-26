@@ -7,10 +7,23 @@ import httpx
 from dotenv import load_dotenv
 
 
+async def wait_ready(client: httpx.AsyncClient) -> None:
+    for _ in range(60):
+        try:
+            response = await client.get("/ready")
+            if response.status_code == 200:
+                return
+        except httpx.TransportError:
+            pass
+        await asyncio.sleep(0.5)
+    raise TimeoutError("API readiness did not succeed within the startup window.")
+
+
 async def run() -> None:
     load_dotenv(".env")
     headers = {"Authorization": "Bearer " + os.environ["FIN_DEV_TOKEN"]}
     async with httpx.AsyncClient(base_url="http://127.0.0.1:8000", timeout=10) as client:
+        await wait_ready(client)
         health = await client.get("/health")
         ready = await client.get("/ready")
         assert health.status_code == ready.status_code == 200

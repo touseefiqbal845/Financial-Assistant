@@ -5,12 +5,14 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
+from smoke_api import wait_ready
 
 
 async def run() -> None:
     load_dotenv(".env")
     headers = {"Authorization": "Bearer " + os.environ["FIN_DEV_TOKEN"]}
     async with httpx.AsyncClient(base_url="http://127.0.0.1:8000", timeout=10) as client:
+        await wait_ready(client)
         submitted = await client.post(
             "/questions",
             headers=headers,
