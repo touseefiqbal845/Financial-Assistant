@@ -17,6 +17,8 @@
 | Image secrets | `/app/.env` absent; no credentials supplied as build arguments |
 | API container smoke | Health/readiness, missing authentication, cross-entity denial, submission and cancellation passed |
 | Separate worker container | Completed a persisted clarification job using the real database/checkpointer, with zero model calls |
+| Local admission benchmark | Ten submission/cancellation requests: median 0.074 seconds, maximum 0.512 seconds; this is not a model-throughput benchmark |
+| Worker monitoring | Authenticated internal metrics endpoint returned HTTP 200 |
 | Tracked-file secret scan | Passed; local `.env` is ignored |
 | OpenAI account preflight | Key authenticated; configured model identifiers were listed |
 
@@ -40,6 +42,6 @@ After adding API credit, stop the worker, seed documents, and run the bounded li
 
 ## Delivery and production limits
 
-The project is prepared locally. GitHub publication requires an authenticated GitHub account and an explicit destination/visibility. No live financial service was deployed publicly.
+The project is committed locally. The selected destination is `https://github.com/touseefiqbal845/Financial-Assistant`; it was empty when inspected. An initial push was rejected because this machine has no GitHub credentials. The user subsequently asked to skip publication, so no further push is planned. No live financial service was deployed publicly.
 
 Production release still requires identity-provider claim configuration, deployment-specific rate limits, backups/restore validation, retention configuration, expanded adversarial and human-reviewed financial evaluations, and representative load tests. Coverage is evidence of exercised paths, not a guarantee of security or correctness.
