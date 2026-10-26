@@ -1,0 +1,24 @@
+name: checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install uv==0.13.5
+      - run: uv sync --locked
+      - run: uv run ruff check src tests scripts evals benchmarks migrations
+      - run: uv run ruff format --check src tests scripts evals benchmarks migrations
+      - run: uv run mypy src
+      - run: uv run pytest -m 'not postgres and not live' --cov=financial_assistant --cov-report=term-missing
+      - run: uv run python -m evals.runner
+      - run: docker build -f deploy/Dockerfile -t financial-assistant:ci .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deterministic-evaluation
+          path: artifacts/evaluation.json

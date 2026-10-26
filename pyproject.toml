@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "financial-assistant"
+version = "0.1.0"
+description = "Evidence-grounded, read-only financial multi-agent analysis"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3", "openai>=2,<3", "langgraph>=1,<2",
+  "langgraph-checkpoint-postgres>=3,<4", "sqlalchemy[asyncio]>=2.0,<3",
+  "psycopg[binary,pool]>=3.2,<4", "alembic>=1.14,<2", "pgvector>=0.3,<1",
+  "pyjwt[crypto]>=2.10,<3", "httpx>=0.28,<1", "prometheus-client>=0.21,<1",
+  "opentelemetry-api>=1.29,<2", "opentelemetry-sdk>=1.29,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.29,<2", "pypdf>=5,<7", "tiktoken>=0.9,<1"
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "pytest-cov>=6,<8", "ruff>=0.11,<1", "mypy>=1.15,<2", "aiosqlite>=0.20,<1"]
+
+[project.scripts]
+finance-worker = "financial_assistant.worker:main"
+finance-seed = "financial_assistant.ingestion.seed:main"
+finance-preflight = "financial_assistant.connectors.models.preflight:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/financial_assistant"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["E501"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.12"
+check_untyped_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["migrations"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = ["postgres: requires a dedicated PostgreSQL test database", "live: requires paid OpenAI access"]

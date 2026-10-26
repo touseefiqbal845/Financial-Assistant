@@ -1,0 +1,36 @@
+name: postgres-integration
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.1-pg17
+        env:
+          POSTGRES_USER: finance_owner
+          POSTGRES_PASSWORD: ci-only-owner-credential-not-for-deployment
+          POSTGRES_DB: finance
+        ports: ['55432:5432']
+        options: --health-cmd 'pg_isready -U finance_owner -d finance' --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      FIN_ENVIRONMENT: test
+      FIN_DEV_AUTH_ENABLED: 'true'
+      FIN_DEV_TOKEN: ci-only-auth-token-not-for-deployment
+      FIN_DATABASE_URL: postgresql+psycopg://finance_owner:ci-only-owner-credential-not-for-deployment@localhost:55432/finance
+      FIN_SOURCE_DATABASE_URL: postgresql+psycopg://finance_reader:ci-only-reader-credential-not-for-deployment@localhost:55432/finance
+      FIN_CHECKPOINT_URL: postgresql://finance_owner:ci-only-owner-credential-not-for-deployment@localhost:55432/finance
+      FIN_MIGRATION_DATABASE_URL: postgresql+psycopg://finance_owner:ci-only-owner-credential-not-for-deployment@localhost:55432/finance
+      DB_APP_PASSWORD: ci-only-app-credential-not-for-deployment
+      DB_READER_PASSWORD: ci-only-reader-credential-not-for-deployment
+      DB_INGEST_PASSWORD: ci-only-ingest-credential-not-for-deployment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install uv==0.13.5
+      - run: uv sync --locked
+      - run: uv run python scripts/verify_migrations.py
+      - run: uv run python scripts/verify_postgres.py

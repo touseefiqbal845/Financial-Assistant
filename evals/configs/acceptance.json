@@ -1,0 +1,1 @@
+{"version":"1","deterministic_required_pass_rate":1.0,"live_required_pass_rate":1.0,"live_max_total_usd":"1.00","note":"Thresholds fixed before evaluation. Fixture scores validate plumbing, not LLM quality. Live production release requires expanded human-reviewed financial and adversarial cases."}

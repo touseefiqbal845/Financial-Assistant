@@ -1,0 +1,76 @@
+name: financial-assistant
+x-app: &app
+  image: financial-assistant:local
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+  environment: &env
+    FIN_ENVIRONMENT: development
+    FIN_DATABASE_URL: postgresql+psycopg://finance_app:${DB_APP_PASSWORD:?required}@db:5432/finance
+    FIN_SOURCE_DATABASE_URL: postgresql+psycopg://finance_reader:${DB_READER_PASSWORD:?required}@db:5432/finance
+    FIN_CHECKPOINT_URL: postgresql://finance_app:${DB_APP_PASSWORD:?required}@db:5432/finance
+    FIN_OPENAI_API_KEY: ${FIN_OPENAI_API_KEY:-}
+    FIN_DEV_AUTH_ENABLED: ${FIN_DEV_AUTH_ENABLED:-false}
+    FIN_DEV_TOKEN: ${FIN_DEV_TOKEN:-}
+    FIN_OIDC_JWKS_URL: ${FIN_OIDC_JWKS_URL:-}
+    FIN_OIDC_ISSUER: ${FIN_OIDC_ISSUER:-}
+    FIN_OIDC_AUDIENCE: ${FIN_OIDC_AUDIENCE:-}
+    FIN_METRICS_TOKEN: ${FIN_METRICS_TOKEN:-}
+  depends_on:
+    db:
+      condition: service_healthy
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  mem_limit: 768m
+  cpus: 1.0
+  restart: unless-stopped
+services:
+  db:
+    image: pgvector/pgvector:0.8.1-pg17
+    environment:
+      POSTGRES_DB: finance
+      POSTGRES_USER: finance_owner
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?required}
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: [finance-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U finance_owner -d finance"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    <<: *app
+    environment:
+      <<: *env
+      FIN_OPENAI_API_KEY: ""
+      FIN_SOURCE_DATABASE_URL: postgresql+psycopg://disabled:disabled@db:5432/finance
+    ports: ["127.0.0.1:8000:8000"]
+  worker:
+    <<: *app
+    command: [finance-worker]
+    healthcheck:
+      disable: true
+  migrate:
+    <<: *app
+    profiles: [setup]
+    restart: "no"
+    environment:
+      <<: *env
+      FIN_MIGRATION_DATABASE_URL: postgresql+psycopg://finance_owner:${DB_OWNER_PASSWORD:?required}@db:5432/finance
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?required}
+      DB_READER_PASSWORD: ${DB_READER_PASSWORD:?required}
+      DB_INGEST_PASSWORD: ${DB_INGEST_PASSWORD:?required}
+    command: [sh, -c, "alembic upgrade head && python scripts/provision.py"]
+  seed:
+    <<: *app
+    profiles: [setup]
+    restart: "no"
+    environment:
+      <<: *env
+      FIN_INGEST_DATABASE_URL: postgresql+psycopg://finance_ingest:${DB_INGEST_PASSWORD:?required}@db:5432/finance
+    command: [finance-seed]
+volumes:
+  finance-db:

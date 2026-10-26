@@ -1,0 +1,17 @@
+groups:
+  - name: financial-assistant
+    rules:
+      - alert: FinancialExecutionFailures
+        expr: sum(rate(finance_events_total{kind="execution",outcome="failed"}[10m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Financial executions are failing
+      - alert: FinancialLatencyHigh
+        expr: histogram_quantile(0.95, sum by (le) (rate(finance_step_seconds_bucket{step="execution"}[10m]))) > 120
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Financial execution p95 exceeds two minutes

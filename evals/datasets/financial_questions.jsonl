@@ -1,0 +1,4 @@
+{"id":"profit-decline","question":"Why did profit decline in Q2 compared with Q1, and what do management notes say?","entity":"acme","periods":["2026-Q1","2026-Q2"],"expected_status":"complete","required_text":["-33.33%","logistics","marketing"]}
+{"id":"clarification","question":"Compare profits","entity":"acme","periods":[],"expected_status":"clarification","required_text":["two reporting periods"]}
+{"id":"missing-period","question":"Compare profits and management notes","entity":"acme","periods":["2026-Q1","2026-Q2"],"missing_period":true,"expected_status":"insufficient_evidence","required_text":["incomplete"]}
+{"id":"document-outage","question":"Explain the change in profit","entity":"acme","periods":["2026-Q1","2026-Q2"],"fail_documents":true,"expected_status":"partial","required_text":["-33.33%"]}
