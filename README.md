@@ -33,6 +33,57 @@ flowchart TD
 
 Run `uv sync --locked`, then `uv run python scripts/init_local.py` to generate a development `.env` with distinct credentials. Set `FIN_OPENAI_API_KEY` locally. Alternatively, configure `.env.example` manually using different URL-safe random database passwords of at least 24 characters. Never commit `.env`.
 
+## Start the project on Windows
+
+Open PowerShell and change to the project directory. These commands use the project's virtual environment directly, so they work even when `uv` is not on the global `PATH`:
+
+```powershell
+cd D:\projects\financial-assistant
+```
+
+Install the locked Python dependencies once (and again after dependency changes):
+
+```powershell
+.\.venv\Scripts\uv.exe sync --locked
+```
+
+Start Docker Desktop, then start PostgreSQL and build the application image:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml up -d db
+docker compose --env-file .env -f deploy/compose.yaml build
+```
+
+Apply the database schema and provision the application's database roles:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml run --rm migrate
+```
+
+Seed the synthetic financial rows and document examples, then start the API and background worker:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml run --rm seed
+docker compose --env-file .env -f deploy/compose.yaml up -d api worker
+```
+
+Seeding makes two small paid embedding requests and requires an API key with available API credit. It is needed for the included document-search example; the API and worker can start without seeding, but that example will not have seeded data. ChatGPT Plus does not include API credit.
+
+Check service status and worker logs:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml ps
+docker compose --env-file .env -f deploy/compose.yaml logs --tail 30 worker
+```
+
+The API is at `http://localhost:8000`; interactive API documentation is at `http://localhost:8000/docs`. Stop the local services with:
+
+```powershell
+docker compose --env-file .env -f deploy/compose.yaml down
+```
+
+The startup sequence is: install dependencies, start PostgreSQL, build the image, migrate/provision the database, seed sample data, then start the API and worker. The API accepts and stores requests; the worker executes them; PostgreSQL stores source data, execution state, and workflow checkpoints.
+
 Install and verify dependencies:
 
 ```powershell
